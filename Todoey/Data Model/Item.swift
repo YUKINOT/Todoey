@@ -8,7 +8,7 @@
 
 import Foundation
 
-class Item {
+class Item :Codable { //Encodable, Decodable と同じ意味
     var title: String = ""
     var done: Bool = false
     

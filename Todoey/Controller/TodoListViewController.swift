@@ -6,37 +6,25 @@
 //  Copyright © 2019 Yukino Togashi. All rights reserved.
 //
 
-
+// Plistが保存されている場所がわからない。Angelaの言う通りにMackintosh HDの階層を降りていったが見当たらなかった。
 
 import UIKit
 
 class TodoListViewController: UITableViewController {
     
-    
     var itemArray = [Item]() 
     
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        let newItem = Item()
-        newItem.title = "One"
-        itemArray.append(newItem)
+        print(dataFilePath)
         
-        let newItem2 = Item()
-        newItem2.title = "Two"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Three"
-        itemArray.append(newItem3)
-        
-        
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+        loadItems()
+
     }
     
     //Mark - Tableview Datasource Methods
@@ -87,7 +75,7 @@ class TodoListViewController: UITableViewController {
 //            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
 //        }
         
-        tableView.reloadData()
+        saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -102,21 +90,51 @@ class TodoListViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             //What will happen once the user clicks the Add item button on UIAlert
+            
             let newItem = Item()
             newItem.title = textField.text!
             
             self.itemArray.append(newItem)
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            self.tableView.reloadData()
+            
+            self.saveItems()
+
         }
         
         alert.addTextField { (alertTextfield) in
             alertTextfield.placeholder = "Create New Item"
             textField = alertTextfield
         }
-        alert.addAction(action)
         
+        alert.addAction(action)
         present(alert, animated: true, completion: nil)
+    
     }
-}
+    
+    
+    //Mark - Model Manuplation Methods
+    
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("error encoding itemArray, \(error)")
+        }
+        self.tableView.reloadData() //ここのselfはなぜ必要なのか？
+        
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!){ // try ?って？tryはdo catchとセットで使うのではないの？
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data) //なぜここでselfが入るのか、、closureじゃないのに？
+            } catch {
+                print("error decoding itemArray, \(error)")
+            }
+        }
+    }
 
+}
